@@ -27,6 +27,8 @@ import CallParticipantCollection from './models/CallParticipantCollection'
 import LocalCallParticipantModel from './models/LocalCallParticipantModel'
 import LocalMediaModel from './models/LocalMediaModel'
 import CallAnalyzer from './CallAnalyzer'
+import { ParticipantAnalyzer } from './ParticipantAnalyzer'
+import { PeerConnectionAnalyzer } from './PeerConnectionAnalyzer'
 import SentVideoQualityThrottler from './SentVideoQualityThrottler'
 import { PARTICIPANT } from '../../constants'
 import { fetchSignalingSettings } from '../../services/signalingService'
@@ -170,6 +172,22 @@ async function signalingJoinCall(token) {
 		} else {
 			callAnalyzer = new CallAnalyzer(localMediaModel, null, callParticipantCollection)
 		}
+
+		if (!OCA.Talk) {
+			OCA.Talk = {}
+		}
+		OCA.Talk.newPeerConnectionAnalyzer = () => {
+			return new PeerConnectionAnalyzer()
+		}
+		OCA.Talk.newParticipantAnalyzer = () => {
+			return new ParticipantAnalyzer()
+		}
+		OCA.Talk.callAnalyzer = callAnalyzer
+
+		// To be used with ParticipantAnalyzer.
+		OCA.Talk.localMediaModel = localMediaModel
+		OCA.Talk.localCallParticipantModel = localCallParticipantModel
+		OCA.Talk.callParticipantCollection = callParticipantCollection
 
 		return new Promise((resolve, reject) => {
 			startedCall = resolve
