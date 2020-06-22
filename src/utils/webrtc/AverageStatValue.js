@@ -62,6 +62,7 @@ AverageStatValue.prototype = {
 			// used as the base for the rest of values.
 			const lastRawValue = this._rawValues.length ? this._rawValues[this._rawValues.length - 1] : value
 			relativeValue = value - lastRawValue
+			console.debug('Setting value ' + value + ' to ' + relativeValue + ' with last raw value ' + lastRawValue)
 		}
 
 		this._rawValues.push(value)
