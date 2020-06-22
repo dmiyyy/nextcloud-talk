@@ -103,6 +103,25 @@ AverageStatValue.prototype = {
 		return weightedValues / weightsSum
 	},
 
+	// TODO remove
+	getAverage: function() {
+		let sum = 0
+
+		for (let i = 0; i < this._relativeValues.length; i++) {
+			sum += this._relativeValues[i]
+		}
+
+		return sum / this._relativeValues.length
+	},
+
+	// TODO remove
+	getMedian: function() {
+		const sortedRelativeValues = this._relativeValues.slice()
+		sortedRelativeValues.sort()
+
+		return sortedRelativeValues[Math.floor(sortedRelativeValues.length / 2)]
+	},
+
 }
 
 export {

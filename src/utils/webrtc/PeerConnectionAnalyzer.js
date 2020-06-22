@@ -26,6 +26,7 @@ import {
 
 // TODO remove
 import { showError } from '@nextcloud/dialogs'
+import Plotly from 'plotly.js-dist'
 
 const CONNECTION_QUALITY = {
 	UNKNOWN: 0,
@@ -294,6 +295,10 @@ PeerConnectionAnalyzer.prototype = {
 		if (this._analysisEnabled['video']) {
 			this._setConnectionQualityVideo(this._calculateConnectionQualityVideo())
 		}
+
+		// TODO remove
+		this.printAudioPackagesLostRatio()
+		this.printVideoPackagesLostRatio()
 	},
 
 	_processSenderStats: function(stats) {
@@ -669,6 +674,193 @@ PeerConnectionAnalyzer.prototype = {
 		}
 
 		return CONNECTION_QUALITY.GOOD
+	},
+
+	// TODO remove
+	printAudioPackagesLostRatio: function() {
+		this.printPackagesLostRatio(this._packets['audio'], this._packetsLost['audio'], this._packetsLostRatio['audio'], this._packetsPerSecond['audio'], 'audio')
+	},
+	printVideoPackagesLostRatio: function() {
+		this.printPackagesLostRatio(this._packets['video'], this._packetsLost['video'], this._packetsLostRatio['video'], this._packetsPerSecond['video'], 'video')
+	},
+	printPackagesLostRatio: function(packets, packetsLost, packetsLostRatio, packetsPerSecond, kind) {
+		if (!packets.hasEnoughData() || !packetsLost.hasEnoughData()) {
+			console.debug('Packages lost ratio: not enough data yet')
+			return
+		}
+
+		const packetsWeightedAverage = packets.getWeightedAverage()
+		const packetsLostWeightedAverage = packetsLost.getWeightedAverage()
+		const packetsAverageAverage = packets.getAverage()
+		const packetsLostAverageAverage = packetsLost.getAverage()
+		const packetsMedianAverage = packets.getMedian()
+		const packetsLostMedianAverage = packetsLost.getMedian()
+		const packetsRaw = packets.getLastRelativeValue()
+		const packetsLostRaw = packetsLost.getLastRelativeValue()
+
+		if (!packetsWeightedAverage) {
+			console.debug('No packages for a while, it will be probably disconnected soon')
+		}
+
+		let packetsLostWeightedRatio = packetsLostWeightedAverage / packetsWeightedAverage
+		let packetsLostAverageRatio = packetsLostAverageAverage / packetsAverageAverage
+		let packetsLostMedianRatio = packetsLostMedianAverage / packetsMedianAverage
+		let packetsLostRawRatio = packetsLostRaw / packetsRaw
+
+// 		console.debug('Packages lost ratio weighted: ' + packetsLostWeightedRatio)
+// 		console.debug('Packages lost ratio average: ' + packetsLostAverageRatio)
+// 		console.debug('Packages lost ratio median: ' + packetsLostMedianRatio)
+
+		if (kind === 'video') {
+			return
+		}
+
+		if (Number.isNaN(packetsLostWeightedRatio)) {
+			packetsLostWeightedRatio = 1.5
+		}
+		if (Number.isNaN(packetsLostAverageRatio)) {
+			packetsLostAverageRatio = 1.5
+		}
+		if (Number.isNaN(packetsLostMedianRatio)) {
+			packetsLostMedianRatio = 1.5
+		}
+		if (Number.isNaN(packetsLostRawRatio)) {
+			packetsLostRawRatio = 1.5
+		}
+
+		const packetsLostRatioWeighted = packetsLostRatio.getWeightedAverage()
+		const packetsLostRatioAverage = packetsLostRatio.getAverage()
+		const packetsLostRatioMedian = packetsLostRatio.getMedian()
+		const packetsLostRatioRaw = packetsLostRatio.getLastRelativeValue()
+
+		if (!this._packetsLostWeightedRatios) {
+			this._packetsLostWeightedRatios = []
+			this._packetsLostAverageRatios = []
+			this._packetsLostMedianRatios = []
+			this._packetsLostRawRatios = []
+
+			this._packetsLostRatioWeighteds = []
+			this._packetsLostRatioAverages = []
+			this._packetsLostRatioMedians = []
+			this._packetsLostRatioRaws = []
+		}
+
+		this._packetsLostWeightedRatios.push(packetsLostWeightedRatio)
+		this._packetsLostAverageRatios.push(packetsLostAverageRatio)
+		this._packetsLostMedianRatios.push(packetsLostMedianRatio)
+		this._packetsLostRawRatios.push(packetsLostRawRatio)
+
+		this._packetsLostRatioWeighteds.push(packetsLostRatioWeighted)
+		this._packetsLostRatioAverages.push(packetsLostRatioAverage)
+		this._packetsLostRatioMedians.push(packetsLostRatioMedian)
+		this._packetsLostRatioRaws.push(packetsLostRatioRaw)
+
+		if (this._packetsLostWeightedRatios.length % 10) {
+			return
+		}
+
+		const axisX = []
+		for (let i = 0; i < this._packetsLostWeightedRatios.length; i++) {
+			axisX.push(i + 1)
+		}
+
+		const trace1 = {
+			y: this._packetsLostWeightedRatios,
+			x: axisX,
+			type: 'scatter',
+			name: 'Weighted',
+		}
+
+		const trace2 = {
+			y: this._packetsLostAverageRatios,
+			x: axisX,
+			type: 'scatter',
+			name: 'Average',
+		}
+
+		const trace3 = {
+			y: this._packetsLostMedianRatios,
+			x: axisX,
+			type: 'scatter',
+			name: 'Median',
+		}
+
+		const trace4 = {
+			y: this._packetsLostRawRatios,
+			x: axisX,
+			type: 'scatter',
+			name: 'Raw',
+		}
+
+		const trace5 = {
+			y: this._packetsLostRatioWeighteds,
+			x: axisX,
+			type: 'scatter',
+			name: 'Ratio weighted',
+		}
+
+		const trace6 = {
+			y: this._packetsLostRatioAverages,
+			x: axisX,
+			type: 'scatter',
+			name: 'Ratio average',
+		}
+
+		const trace7 = {
+			y: this._packetsLostRatioMedians,
+			x: axisX,
+			type: 'scatter',
+			name: 'Ratio median',
+		}
+
+		const trace8 = {
+			y: this._packetsLostRatioRaws,
+			x: axisX,
+			type: 'scatter',
+			name: 'Ratio raw',
+		}
+
+		const data = [trace1, trace2, trace3, trace4, trace5, trace6, trace7, trace8]
+
+		console.debug('Plotting data: ' + this._packetsLostWeightedRatios.length + ' ' + axisX.length)
+
+		if (this._addConnectionStatsElement()) {
+			this.showConnectionStats()
+		}
+
+		Plotly.react('connectionStats', data, { uirevision: 'true' })
+	},
+
+	_addConnectionStatsElement: function() {
+		// TODO index by peer id
+		if (document.getElementById('connectionStats')) {
+			return false
+		}
+
+		const connectionStatsElement = document.createElement('div')
+		connectionStatsElement.setAttribute('id', 'connectionStats')
+		connectionStatsElement.setAttribute('style', 'height: 300px; width: 100%; position: absolute; bottom: 0;')
+		document.getElementById('call-container').append(connectionStatsElement)
+
+		return true
+	},
+
+	showConnectionStats: function() {
+		const connectionStatsElement = document.getElementById('connectionStats')
+		if (!connectionStatsElement) {
+			return
+		}
+
+		connectionStatsElement.classList.remove('hidden')
+	},
+
+	hideConnectionStats: function() {
+		const connectionStatsElement = document.getElementById('connectionStats')
+		if (!connectionStatsElement) {
+			return
+		}
+
+		connectionStatsElement.classList.add('hidden')
 	},
 
 }
