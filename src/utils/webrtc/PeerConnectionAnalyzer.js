@@ -24,6 +24,9 @@ import {
 	AverageStatValue,
 } from './AverageStatValue'
 
+// TODO remove
+import { showError } from '@nextcloud/dialogs'
+
 const CONNECTION_QUALITY = {
 	UNKNOWN: 0,
 	GOOD: 1,
@@ -82,8 +85,55 @@ function PeerConnectionAnalyzer() {
 
 	this._connectionQualityAudio = CONNECTION_QUALITY.UNKNOWN
 	this._connectionQualityVideo = CONNECTION_QUALITY.UNKNOWN
+
+	// TODO remove
+	this._setUpNotifications()
 }
 PeerConnectionAnalyzer.prototype = {
+
+	// TODO remove
+	_setUpNotifications: function() {
+		// TODO Should be there a "grace period" for the notifications or a
+		// grace period for the quality? And should that be taken into account
+		// here or in a class using this one?
+		const handleChangeConnectionQualityAudio = (analyzer, currentQuality) => {
+			if (this._connectionQualityAudioNotification) {
+				this._connectionQualityAudioNotification.hideToast()
+			}
+
+			if (currentQuality === CONNECTION_QUALITY.MEDIUM) {
+				this._connectionQualityAudioNotification = showError('Medium audio connection quality', { timeout: 0 })
+			} else if (currentQuality === CONNECTION_QUALITY.BAD) {
+				this._connectionQualityAudioNotification = showError('Bad audio connection quality', { timeout: 0 })
+			} else if (currentQuality === CONNECTION_QUALITY.VERY_BAD) {
+				this._connectionQualityAudioNotification = showError('Very bad audio connection quality', { timeout: 0 })
+			} else if (currentQuality === CONNECTION_QUALITY.NO_TRANSMITTED_DATA) {
+				this._connectionQualityAudioNotification = showError('No audio data', { timeout: 0 })
+			} else if (currentQuality === CONNECTION_QUALITY.UNKNOWN && this._peerConnection.iceConnectionState !== 'connected' && this._peerConnection.iceConnectionState !== 'completed') {
+				this._connectionQualityAudioNotification = showError('No audio connection', { timeout: 0 })
+			}
+		}
+		const handleChangeConnectionQualityVideo = (analyzer, currentQuality) => {
+			if (this._connectionQualityVideoNotification) {
+				this._connectionQualityVideoNotification.hideToast()
+			}
+
+			if (currentQuality === CONNECTION_QUALITY.MEDIUM) {
+				this._connectionQualityVideoNotification = showError('Medium video connection quality', { timeout: 0 })
+			} else if (currentQuality === CONNECTION_QUALITY.BAD) {
+				this._connectionQualityVideoNotification = showError('Bad video connection quality', { timeout: 0 })
+			} else if (currentQuality === CONNECTION_QUALITY.VERY_BAD) {
+				this._connectionQualityVideoNotification = showError('Very bad video connection quality', { timeout: 0 })
+			} else if (currentQuality === CONNECTION_QUALITY.NO_TRANSMITTED_DATA) {
+				this._connectionQualityVideoNotification = showError('No video data', { timeout: 0 })
+			} else if (currentQuality === CONNECTION_QUALITY.UNKNOWN && this._peerConnection.iceConnectionState !== 'connected' && this._peerConnection.iceConnectionState !== 'completed') {
+				this._connectionQualityVideoNotification = showError('No video connection', { timeout: 0 })
+			}
+		}
+
+		this.on('change:connectionQualityAudio', handleChangeConnectionQualityAudio)
+		// this.on('change:connectionQualityVideo', handleChangeConnectionQualityVideo)
+	},
 
 	on: function(event, handler) {
 		if (!this._handlers.hasOwnProperty(event)) {
