@@ -733,6 +733,9 @@ PeerConnectionAnalyzer.prototype = {
 		const packetsLostRatioMedian = packetsLostRatio.getMedian()
 		const packetsLostRatioRaw = packetsLostRatio.getLastRelativeValue()
 
+		const packetsPerSecondRaw = packetsPerSecond.getLastRelativeValue()
+		const packetsPerSecondWeightedAverage = packetsPerSecond.getWeightedAverage()
+
 		if (!this._packetsLostWeightedRatios) {
 			this._packetsLostWeightedRatios = []
 			this._packetsLostAverageRatios = []
@@ -743,6 +746,13 @@ PeerConnectionAnalyzer.prototype = {
 			this._packetsLostRatioAverages = []
 			this._packetsLostRatioMedians = []
 			this._packetsLostRatioRaws = []
+
+			this._packetsPerSecondRaw = []
+			this._packetsRaw = []
+			this._packetsPerSecondWeighted = []
+			this._packetsWeighted = []
+			this._packetsLostRaw = []
+			this._packetsLostWeightedAverage = []
 		}
 
 		this._packetsLostWeightedRatios.push(packetsLostWeightedRatio)
@@ -754,6 +764,13 @@ PeerConnectionAnalyzer.prototype = {
 		this._packetsLostRatioAverages.push(packetsLostRatioAverage)
 		this._packetsLostRatioMedians.push(packetsLostRatioMedian)
 		this._packetsLostRatioRaws.push(packetsLostRatioRaw)
+
+		this._packetsPerSecondRaw.push(packetsPerSecondRaw)
+		this._packetsRaw.push(packetsRaw)
+		this._packetsPerSecondWeighted.push(packetsPerSecondWeightedAverage)
+		this._packetsWeighted.push(packetsWeightedAverage)
+		this._packetsLostRaw.push(packetsLostRaw)
+		this._packetsLostWeightedAverage.push(packetsLostWeightedAverage)
 
 		if (this._packetsLostWeightedRatios.length % 10) {
 			return
@@ -820,13 +837,57 @@ PeerConnectionAnalyzer.prototype = {
 			name: 'Ratio raw',
 		}
 
-		const data = [trace1, trace2, trace3, trace4, trace5, trace6, trace7, trace8]
+		let data = [trace1, trace2, trace3, trace4, trace5, trace6, trace7, trace8]
 
 		console.debug('Plotting data: ' + this._packetsLostWeightedRatios.length + ' ' + axisX.length)
 
 		if (this._addConnectionStatsElement()) {
 			this.showConnectionStats()
 		}
+
+		const packetsPerSecondTrace = {
+			y: this._packetsPerSecond,
+			x: axisX,
+			type: 'scatter',
+			name: 'Packets per second',
+		}
+
+		const packetsTrace = {
+			y: this._packets,
+			x: axisX,
+			type: 'scatter',
+			name: 'Packets',
+		}
+
+		const packetsPerSecondWeightedTrace = {
+			y: this._packetsPerSecondWeighted,
+			x: axisX,
+			type: 'scatter',
+			name: 'Packets per second weighted',
+		}
+
+		const packetsWeightedTrace = {
+			y: this._packetsWeighted,
+			x: axisX,
+			type: 'scatter',
+			name: 'Packets weighted',
+		}
+
+		const packetsLostTrace = {
+			y: this._packetsLost,
+			x: axisX,
+			type: 'scatter',
+			name: 'Packets lost',
+		}
+
+		const packetsLostWeightedAverageTrace = {
+			y: this._packetsLostWeightedAverage,
+			x: axisX,
+			type: 'scatter',
+			name: 'Packets lost weighted',
+		}
+
+		data = [packetsPerSecondTrace, packetsTrace, packetsPerSecondWeightedTrace, packetsWeightedTrace, packetsLostTrace, packetsLostWeightedAverageTrace]
 
 		Plotly.react('connectionStats', data, { uirevision: 'true' })
 	},
