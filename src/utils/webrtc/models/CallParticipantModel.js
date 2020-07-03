@@ -234,7 +234,9 @@ CallParticipantModel.prototype = {
 			this._peer.off('extendedIceConnectionStateChange', this._handleExtendedIceConnectionStateChangeBound)
 		}
 
+		// TODO move into attributes
 		this._peer = peer
+		this._trigger('change:peer', [peer])
 
 		// Special case when the participant has no streams.
 		if (!this._peer) {
@@ -309,7 +311,9 @@ CallParticipantModel.prototype = {
 			console.warn('Mismatch between stored peer ID and ID of given screen peer: ', this.get('peerId'), screenPeer.id)
 		}
 
+		// TODO move into attributes
 		this._screenPeer = screenPeer
+		this._trigger('change:screenPeer', [screenPeer])
 
 		// Reset state that depends on the screen Peer object.
 		this._handlePeerStreamAdded(this._screenPeer)
