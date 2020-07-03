@@ -65,6 +65,11 @@ function PeerConnectionAnalyzer() {
 		'video': new AverageStatValue(2, STAT_VALUE_TYPE.CUMULATIVE),
 	}
 
+	this._analysisEnabled = {
+		'audio': true,
+		'video': true,
+	}
+
 	this._handlers = []
 
 	this._peerConnection = null
@@ -156,6 +161,34 @@ PeerConnectionAnalyzer.prototype = {
 		}
 	},
 
+	setAnalysisEnabledAudio: function(analysisEnabledAudio) {
+		this._analysisEnabled['audio'] = analysisEnabledAudio
+
+		if (!analysisEnabledAudio) {
+			this._setConnectionQualityAudio(CONNECTION_QUALITY.UNKNOWN)
+		} else {
+			this._packets['audio'].reset()
+			this._packetsLost['audio'].reset()
+			this._packetsLostRatio['audio'].reset()
+			this._packetsPerSecond['audio'].reset()
+			this._timestamps['audio'].reset()
+		}
+	},
+
+	setAnalysisEnabledVideo: function(analysisEnabledVideo) {
+		this._analysisEnabled['video'] = analysisEnabledVideo
+
+		if (!analysisEnabledVideo) {
+			this._setConnectionQualityVideo(CONNECTION_QUALITY.UNKNOWN)
+		} else {
+			this._packets['video'].reset()
+			this._packetsLost['video'].reset()
+			this._packetsLostRatio['video'].reset()
+			this._packetsPerSecond['video'].reset()
+			this._timestamps['video'].reset()
+		}
+	},
+
 	_handleIceConnectionStateChanged: function() {
 		// TODO probably place this documentation elsewhere
 		// Even if the ICE connection state changes to "closed", when the peer
@@ -197,8 +230,12 @@ PeerConnectionAnalyzer.prototype = {
 			this._processReceiverStats(stats)
 		}
 
-		this._setConnectionQualityAudio(this._calculateConnectionQualityAudio())
-		this._setConnectionQualityVideo(this._calculateConnectionQualityVideo())
+		if (this._analysisEnabled['audio']) {
+			this._setConnectionQualityAudio(this._calculateConnectionQualityAudio())
+		}
+		if (this._analysisEnabled['video']) {
+			this._setConnectionQualityVideo(this._calculateConnectionQualityVideo())
+		}
 	},
 
 	_processSenderStats: function(stats) {
@@ -232,6 +269,10 @@ PeerConnectionAnalyzer.prototype = {
 		}
 
 		for (const stat of stats.values()) {
+			if (!this._analysisEnabled[stat.kind]) {
+				continue
+			}
+
 			if (stat.type === 'outbound-rtp') {
 				if ('packetsSent' in stat && 'kind' in stat) {
 					packetsSent[stat.kind] = stat.packetsSent
@@ -318,6 +359,10 @@ PeerConnectionAnalyzer.prototype = {
 		}
 
 		for (const stat of stats.values()) {
+			if (!this._analysisEnabled[stat.kind]) {
+				continue
+			}
+
 			if (stat.type === 'inbound-rtp') {
 				if ('packetsReceived' in stat && 'kind' in stat) {
 					packetsReceived[stat.kind] = stat.packetsReceived
