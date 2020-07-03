@@ -22,6 +22,12 @@
 	<div id="localVideoContainer"
 		class="videoContainer videoView"
 		:class="{ speaking: localMediaModel.attributes.speaking, 'video-container-grid': isGrid, 'video-container-stripe': isStripe }">
+		<transition name="fade">
+			<span v-show="showQualityWarning"
+				v-tooltip="qualityWarningTooltip"
+				:aria-label="qualityWarningAriaLabel"
+				class="qualityWarning forced-white icon icon-error" />
+		</transition>
 		<video v-show="localMediaModel.attributes.videoEnabled"
 			id="localVideo"
 			ref="video"
@@ -62,12 +68,19 @@ import LocalMediaControls from './LocalMediaControls'
 import Hex from 'crypto-js/enc-hex'
 import SHA1 from 'crypto-js/sha1'
 import { showInfo } from '@nextcloud/dialogs'
+import Tooltip from '@nextcloud/vue/dist/Directives/Tooltip'
 import video from '../../../mixins/video.js'
 import VideoBackground from './VideoBackground'
+import { callAnalyzer } from '../../../utils/webrtc/index'
+import { CONNECTION_QUALITY } from '../../../utils/webrtc/PeerConnectionAnalyzer'
 
 export default {
 
 	name: 'LocalVideo',
+
+	directives: {
+		tooltip: Tooltip,
+	},
 
 	components: {
 		Avatar,
@@ -98,6 +111,12 @@ export default {
 			type: Boolean,
 			default: false,
 		},
+	},
+
+	data() {
+		return {
+			callAnalyzer: callAnalyzer,
+		}
 	},
 
 	computed: {
@@ -132,6 +151,26 @@ export default {
 
 		avatarSizeClass() {
 			return 'avatar-' + this.avatarSize + 'px'
+		},
+
+		showQualityWarning() {
+			return callAnalyzer.attributes.senderConnectionQualityAudio === CONNECTION_QUALITY.VERY_BAD
+				|| callAnalyzer.attributes.senderConnectionQualityAudio === CONNECTION_QUALITY.NO_TRANSMITTED_DATA
+		},
+
+		qualityWarningAriaLabel() {
+			return t('spreed', 'Bad sent audio quality')
+		},
+
+		qualityWarningTooltip() {
+			if (!this.showQualityWarning) {
+				return false
+			}
+
+			return {
+				content: t('spreed', 'Your Internet connection or computer seem loaded. Other participants may not be able to hear you right'),
+				show: true,
+			}
 		},
 	},
 
@@ -240,6 +279,18 @@ export default {
 
 .avatar-container {
 	margin: auto;
+}
+
+.qualityWarning {
+	position: absolute;
+	right: 0;
+
+	width: 44px;
+	height: 44px;
+	background-size: 24px;
+
+	/* Needed to show in front of the avatar container. */
+	z-index: 10;
 }
 
 </style>
