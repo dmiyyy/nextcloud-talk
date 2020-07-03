@@ -36,6 +36,10 @@ export default function LocalCallParticipantModel() {
 
 LocalCallParticipantModel.prototype = {
 
+	get: function(key) {
+		return this.attributes[key]
+	},
+
 	set: function(key, value) {
 		this.attributes[key] = value
 	},
@@ -92,6 +96,26 @@ LocalCallParticipantModel.prototype = {
 
 		this._webRtc.on('forcedMute', this._handleForcedMuteBound)
 		this._unwatchDisplayNameChange = store.watch(state => state.actorStore.displayName, this.setGuestName.bind(this))
+	},
+
+	setPeer: function(peer) {
+		if (peer && this.get('peerId') !== peer.id) {
+			console.warn('Mismatch between stored peer ID and ID of given peer: ', this.get('peerId'), peer.id)
+		}
+
+		// TODO move into attributes
+		this._peer = peer
+		this._trigger('change:peer', [peer])
+	},
+
+	setScreenPeer: function(screenPeer) {
+		if (screenPeer && this.get('peerId') !== screenPeer.id) {
+			console.warn('Mismatch between stored peer ID and ID of given screen peer: ', this.get('peerId'), screenPeer.id)
+		}
+
+		// TODO move into attributes
+		this._screenPeer = screenPeer
+		this._trigger('change:screenPeer', [screenPeer])
 	},
 
 	setGuestName: function(guestName) {
